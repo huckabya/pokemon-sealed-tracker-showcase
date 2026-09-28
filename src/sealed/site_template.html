@@ -1,0 +1,549 @@
+<title>Sealed Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --plane: #f4f5f3;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #7d7b75;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --hair: rgba(11, 11, 11, 0.10);
+  --accent: #2a78d6;
+  --accent-wash: rgba(42, 120, 214, 0.10);
+  --accent-soft: rgba(42, 120, 214, 0.08);
+  --down: #e34948;
+  --up-text: #006300;
+  --down-text: #c23636;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --neutral-chip: #898781;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --plane: #0f1011;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #97958e;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --hair: rgba(255, 255, 255, 0.10);
+    --accent: #3987e5;
+    --accent-wash: rgba(57, 135, 229, 0.14);
+    --accent-soft: rgba(57, 135, 229, 0.12);
+    --down: #e66767;
+    --up-text: #0ca30c;
+    --down-text: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --plane: #0f1011;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #97958e;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --hair: rgba(255, 255, 255, 0.10);
+  --accent: #3987e5;
+  --accent-wash: rgba(57, 135, 229, 0.14);
+  --accent-soft: rgba(57, 135, 229, 0.12);
+  --down: #e66767;
+  --up-text: #0ca30c;
+  --down-text: #e66767;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--plane); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 20px 40px; display: grid; gap: 18px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--hair); }
+.brand h1 { font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: 0.01em; line-height: 1; margin: 0; text-transform: uppercase; }
+.brand p { margin: 6px 0 0; color: var(--ink-2); max-width: 62ch; text-wrap: pretty; }
+.asof { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); display: flex; gap: 10px; align-items: center; }
+.poc { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--hair); border-radius: 999px; padding: 2px 8px; background: var(--surface); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--hair); border-radius: 8px; padding: 2px; }
+.seg button { font: inherit; font-weight: 600; font-size: 13px; color: var(--ink-2); background: none; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.seg button .n { color: var(--muted); font-weight: 500; margin-left: 4px; font-variant-numeric: tabular-nums; }
+select, .clear { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--hair); border-radius: 8px; padding: 7px 10px; }
+.clear { cursor: pointer; color: var(--ink-2); }
+button:focus-visible, select:focus-visible, [tabindex]:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; cursor: pointer; }
+.kpi[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.kpi .label { color: var(--ink-2); font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.kpi .value { font-size: 30px; font-weight: 600; line-height: 1.1; }
+.kpi .hint { color: var(--muted); font-size: 12px; }
+.kpi.static { cursor: default; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px 8px; }
+.panel-head h2 { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: 0.02em; text-transform: uppercase; margin: 0; }
+.panel-head .sub { color: var(--muted); font-size: 12px; }
+
+.tablewrap { overflow-x: auto; }
+table.list { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.list th { text-align: right; font-weight: 600; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+.list th:first-child, .list td:first-child { text-align: left; padding-left: 16px; }
+.list td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; white-space: nowrap; }
+.list tr.row { cursor: pointer; }
+.list tr.row:hover td { background: var(--accent-soft); }
+.list tr.row[aria-selected="true"] td { background: var(--accent-soft); }
+.list tr.row[aria-selected="true"] td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.pname { font-weight: 600; white-space: normal; min-width: 180px; max-width: 290px; }
+.pmeta { color: var(--muted); font-size: 12px; font-weight: 400; }
+.up { color: var(--up-text); }
+.down { color: var(--down-text); }
+.nil { color: var(--muted); }
+.flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--hair); border-radius: 999px; padding: 1px 8px 1px 6px; white-space: nowrap; background: var(--surface); }
+.chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; font-style: normal; }
+.empty { padding: 28px 16px; color: var(--ink-2); }
+svg.spark { display: block; }
+
+.detail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 980px) { .detail { position: static; } }
+.dhead { padding: 14px 16px 4px; display: grid; gap: 4px; }
+.dhead h2 { font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1.1; letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+.dhead .pmeta a { color: var(--accent); text-decoration: none; }
+.dhead .pmeta a:hover { text-decoration: underline; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; padding: 10px 16px 6px; }
+@media (max-width: 480px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat .k { color: var(--muted); font-size: 11.5px; }
+.stat .v { font-size: 17px; font-weight: 600; }
+.stat .s { color: var(--muted); font-size: 11.5px; }
+.chartbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 16px 0; }
+.chartbar .seg button { padding: 4px 10px; font-size: 12px; }
+.chartbox { position: relative; padding: 4px 8px 8px; }
+.chartbox svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--hair); border-radius: 8px; padding: 6px 9px; box-shadow: 0 4px 14px rgba(0,0,0,0.10); font-size: 12px; white-space: nowrap; }
+.tip b { display: block; font-size: 14px; }
+.tip span { color: var(--ink-2); }
+details.data { padding: 0 16px 14px; }
+details.data summary { cursor: pointer; color: var(--ink-2); font-size: 12.5px; }
+details.data table { margin-top: 8px; font-variant-numeric: tabular-nums; border-collapse: collapse; font-size: 12.5px; }
+details.data td { padding: 2px 16px 2px 0; }
+
+.sets .body { padding: 4px 8px 12px; }
+.note { color: var(--muted); font-size: 12px; padding: 0 16px 12px; }
+
+footer.foot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; color: var(--ink-2); font-size: 12.5px; padding-top: 14px; border-top: 1px solid var(--hair); }
+footer.foot h3 { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink); margin: 0 0 6px; }
+footer.foot dl { margin: 0; display: grid; gap: 4px; }
+footer.foot dt { font-weight: 600; color: var(--ink); display: inline; }
+footer.foot dd { margin: 0; display: inline; }
+footer.foot p { margin: 0 0 6px; max-width: 70ch; }
+@media (prefers-reduced-motion: no-preference) { .list tr.row td { transition: background-color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Sealed Pulse</h1>
+      <p>Daily TCGplayer market prices for English sealed Pokémon product, filtered to what matters: flagship boxes, ETBs and bundles from the last two years, with anything dipping, breaking out or trading under its packs pushed to the top.</p>
+    </div>
+    <div class="asof"><span id="asof"></span><span class="poc" id="mode"></span></div>
+  </header>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <div class="seg" id="tiers" role="group" aria-label="Relevance tier"></div>
+    <label for="setSel" class="pmeta">Set</label>
+    <select id="setSel"></select>
+    <button type="button" class="clear" id="clearFlag" hidden>Clear flag filter</button>
+  </div>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <div class="main">
+    <section class="panel" aria-labelledby="listTitle">
+      <div class="panel-head"><h2 id="listTitle">Needs attention</h2><span class="sub" id="listSub"></span></div>
+      <div class="tablewrap">
+        <table class="list" id="list">
+          <thead><tr><th scope="col">Product</th><th scope="col">Price</th><th scope="col">30d</th><th scope="col">90d</th><th scope="col">From peak</th><th scope="col"><span aria-hidden="true">Last 90d</span><span class="sr">90 day price trend</span></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="listEmpty" hidden>No products match these filters.</div>
+    </section>
+
+    <section class="panel detail" id="detail" aria-live="polite">
+      <div class="dhead"><h2 id="dName"></h2><div class="pmeta" id="dMeta"></div></div>
+      <div class="stats" id="dStats"></div>
+      <div class="chartbar">
+        <span class="pmeta" id="dRangeLabel">Market price, USD</span>
+        <div class="seg" id="ranges" role="group" aria-label="Chart range"></div>
+      </div>
+      <div class="chartbox" id="chartbox">
+        <svg id="chart" role="img" tabindex="0" aria-label="Price history chart. Use left and right arrow keys to read values."></svg>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <details class="data"><summary>Show the last 30 price points as a table</summary><table id="dTable"></table></details>
+    </section>
+  </div>
+
+  <section class="panel sets" aria-labelledby="setsTitle">
+    <div class="panel-head"><h2 id="setsTitle">Sets, last 24 months</h2><span class="sub">Median 90-day return of each set's single-unit sealed products</span></div>
+    <div class="body"><svg id="setsChart" role="img" aria-label="Median 90-day return by set"></svg></div>
+    <p class="note" id="setsNote"></p>
+  </section>
+
+  <footer class="foot">
+    <div>
+      <h3>Reading the flags</h3>
+      <dl>
+        <div><dt>Steady decline</dt> <dd>well below its post-release peak, with a consistent 90-day downtrend.</dd></div>
+        <div><dt>Breakout</dt> <dd>a large rise over the last 30 days.</dd></div>
+        <div><dt>Sharp drop / rise</dt> <dd>today's price is unusually far from its 30-day range.</dd></div>
+        <div><dt>Below pack value</dt> <dd>costs less than buying its packs loose.</dd></div>
+        <div><dt>New release / Pre-release</dt> <dd>early price discovery; expect noise.</dd></div>
+      </dl>
+    </div>
+    <div>
+      <h3>Tiers</h3>
+      <p><b>Focus</b>: booster boxes, ETBs, Pokémon Center ETBs, booster bundles, packs and UPCs from sets released in the last 12 months or not yet released. <b>Core</b> extends that to 24 months. <b>Watch</b> is other single-unit sealed product from those sets, plus anything trading at $250 or more.</p>
+      <p>Cases, displays and multi-unit bundles are excluded so every row is one item you can buy.</p>
+    </div>
+    <div>
+      <h3>Data</h3>
+      <p id="prov"></p>
+      <p>Prices are TCGplayer market prices (a rolling average of completed sales), mirrored by TCGCSV. Not financial advice.</p>
+      <p id="build"></p>
+    </div>
+  </footer>
+</div>
+
+<script type="application/json" id="sealed-data">/*__SEALED_DATA__*/null</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById("sealed-data").textContent);
+  if (!D) { document.querySelector(".wrap").textContent = "No data embedded."; return; }
+  const EPOCH = Date.parse(D.meta.epoch + "T00:00:00Z");
+  const DAY = 86400000;
+  const ASOF = Math.round((Date.parse(D.meta.as_of + "T00:00:00Z") - EPOCH) / DAY);
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  const TYPE = { etb: "ETB", pc_etb: "Pokémon Center ETB", booster_box: "Booster box", booster_bundle: "Booster bundle",
+    booster_pack: "Booster pack", upc: "Ultra-Premium Collection", premium_collection: "Premium collection",
+    collection: "Collection", tin: "Tin", mini_tin: "Mini tin", blister: "Blister", deck: "Deck", other: "Other" };
+  const FLAG = {
+    sharp_drop: { label: "Sharp drop", color: "--critical", w: 3 },
+    steady_decline: { label: "Steady decline", color: "--serious", w: 3 },
+    breakout: { label: "Breakout", color: "--good", w: 3 },
+    sharp_rise: { label: "Sharp rise", color: "--good", w: 2 },
+    below_pack_value: { label: "Below pack value", color: "--accent", w: 2 },
+    near_msrp: { label: "Near MSRP", color: "--accent", w: 2 },
+    price_discovery: { label: "New release", color: "--neutral-chip", w: 1 },
+    pre_release: { label: "Pre-release", color: "--neutral-chip", w: 1 },
+  };
+  const usd = (v) => v == null ? "—" : "$" + (v >= 1000 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2));
+  const pct = (v, dp = 1) => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(dp) + "%";
+  const dirClass = (v) => v == null ? "nil" : v > 0.0005 ? "up" : v < -0.0005 ? "down" : "";
+  const dateOf = (d) => new Date(EPOCH + d * DAY);
+  const fmtDate = (d) => dateOf(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+  const state = { tier: "focus", set: "", flag: "", sel: null, range: "all" };
+  try { const t = localStorage.getItem("sealed-pulse-tier"); if (t) state.tier = t; } catch (e) {}
+
+  const inTier = (p, t) => t === "focus" ? p.focus : p.tier === t;
+  const score = (p) => p.flags.reduce((s, f) => s + (FLAG[f] ? FLAG[f].w : 0), 0);
+  function scoped() { return D.products.filter((p) => inTier(p, state.tier) && (!state.set || p.set === state.set)); }
+  function visible() {
+    return scoped().filter((p) => !state.flag || p.flags.includes(state.flag))
+      .sort((a, b) => score(b) - score(a) || Math.abs(b.r30 || 0) - Math.abs(a.r30 || 0) || a.name.localeCompare(b.name));
+  }
+
+  // ---- header & filters
+  $("asof").textContent = "Prices as of " + fmtDate(ASOF);
+  $("mode").textContent = D.meta.public ? "Public build" : "Private proof of concept";
+  const seeded = D.meta.sources.some((s) => s.startsWith("seed"));
+  $("prov").textContent = seeded
+    ? "History before daily collection comes from the open-source etfhanstorz/pokemon-tracker project (weekly points to Aug 10, 2026, then daily). It is included here for a private proof of concept only and is excluded from any public build."
+    : "Every price shown was collected by this project's own daily pipeline.";
+  $("build").textContent = "Built by sealed-tracker " + D.meta.release + (D.meta.commit ? " (" + D.meta.commit.slice(0, 7) + ")" : "") + ".";
+
+  function renderTiers() {
+    const box = $("tiers"); box.replaceChildren();
+    for (const [key, label] of [["focus", "Focus"], ["core", "Core"], ["watch", "Watch"]]) {
+      const b = h("button", null, label); b.type = "button";
+      b.setAttribute("aria-pressed", String(state.tier === key));
+      const n = h("span", "n", String(D.products.filter((p) => inTier(p, key)).length)); b.appendChild(n);
+      b.addEventListener("click", () => { state.tier = key; state.set = ""; state.flag = "";
+        try { localStorage.setItem("sealed-pulse-tier", key); } catch (e) {} renderAll(); });
+      box.appendChild(b);
+    }
+  }
+  function renderSetSelect() {
+    const sel = $("setSel"); sel.replaceChildren();
+    const sets = [...new Set(D.products.filter((p) => inTier(p, state.tier)).map((p) => p.set))].filter(Boolean).sort();
+    const all = h("option", null, "All sets"); all.value = ""; sel.appendChild(all);
+    for (const s of sets) { const o = h("option", null, s); o.value = s; sel.appendChild(o); }
+    sel.value = state.set;
+  }
+  $("setSel").addEventListener("change", (e) => { state.set = e.target.value; state.flag = ""; renderAll(false); });
+  $("clearFlag").addEventListener("click", () => { state.flag = ""; renderAll(false); });
+
+  function renderKpis() {
+    const s = scoped(), box = $("kpis"); box.replaceChildren();
+    const tiles = [
+      { label: "Products", value: s.length, hint: state.set || "All sets in this tier", flag: null },
+      { label: "Steady decline", value: s.filter((p) => p.flags.includes("steady_decline")).length, hint: "Consistent 90-day slide", flag: "steady_decline" },
+      { label: "Breakouts", value: s.filter((p) => p.flags.includes("breakout")).length, hint: "Big 30-day rise", flag: "breakout" },
+      { label: "Below pack value", value: s.filter((p) => p.flags.includes("below_pack_value")).length, hint: "Cheaper than its loose packs", flag: "below_pack_value" },
+    ];
+    for (const t of tiles) {
+      const b = h(t.flag ? "button" : "div", "kpi" + (t.flag ? "" : " static"));
+      const lab = h("span", "label");
+      if (t.flag) { const dot = h("i"); dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:var(${FLAG[t.flag].color})`; lab.appendChild(dot); }
+      lab.appendChild(document.createTextNode(t.label));
+      b.append(lab, h("span", "value", String(t.value)), h("span", "hint", t.hint));
+      if (t.flag) {
+        b.type = "button"; b.setAttribute("aria-pressed", String(state.flag === t.flag));
+        b.addEventListener("click", () => { state.flag = state.flag === t.flag ? "" : t.flag; renderAll(false); });
+      }
+      box.appendChild(b);
+    }
+    $("clearFlag").hidden = !state.flag;
+  }
+
+  function sparkline(pid) {
+    const pts = (D.series[pid] || []).filter((p) => p[0] > ASOF - 90);
+    const W = 84, H = 26, svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: "spark", "aria-hidden": "true" });
+    if (pts.length < 2) return svg;
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const x0 = ASOF - 90, lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
+    const X = (x) => 2 + (x - x0) / 90 * (W - 6), Y = (y) => 3 + (1 - (y - lo) / span) * (H - 6);
+    el("polyline", { points: pts.map((p) => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" "), fill: "none",
+      stroke: css("--muted"), "stroke-width": 1.5, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    const last = pts[pts.length - 1];
+    el("circle", { cx: X(last[0]), cy: Y(last[1]), r: 2.5, fill: css("--accent") }, svg);
+    return svg;
+  }
+  function chip(f) {
+    const c = h("span", "chip"); const dot = h("i"); dot.style.background = `var(${FLAG[f].color})`;
+    c.append(dot, document.createTextNode(FLAG[f].label)); return c;
+  }
+  function renderList() {
+    const rows = visible(), tb = $("list").querySelector("tbody"); tb.replaceChildren();
+    $("listEmpty").hidden = rows.length > 0;
+    $("listSub").textContent = `${rows.length} product${rows.length === 1 ? "" : "s"}` + (state.flag ? ` · ${FLAG[state.flag].label}` : "");
+    if (!rows.find((p) => p.id === state.sel)) state.sel = rows.length ? rows[0].id : null;
+    for (const p of rows) {
+      const tr = h("tr", "row"); tr.tabIndex = 0; tr.setAttribute("aria-selected", String(p.id === state.sel));
+      const name = h("td"); const nm = h("div", "pname", p.name); nm.appendChild(h("div", "pmeta", `${p.set} · ${TYPE[p.type] || p.type}`));
+      if (p.flags.length) { const fw = h("div", "flags"); p.flags.forEach((f) => FLAG[f] && fw.appendChild(chip(f))); nm.appendChild(fw); }
+      name.appendChild(nm);
+      const cell = (v, fmt, cls) => { const td = h("td", cls, fmt(v)); return td; };
+      const sp = h("td"); sp.appendChild(sparkline(String(p.id)));
+      tr.append(name, cell(p.price, usd), cell(p.r30, pct, dirClass(p.r30)), cell(p.r90, pct, dirClass(p.r90)),
+        cell(p.dd, pct, p.dd == null ? "nil" : p.dd <= -0.005 ? "down" : ""), sp);
+      const pick = () => { state.sel = p.id; tb.querySelectorAll("tr").forEach((r) => r.setAttribute("aria-selected", "false")); tr.setAttribute("aria-selected", "true"); renderDetail(); };
+      tr.addEventListener("click", pick);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      tb.appendChild(tr);
+    }
+  }
+
+  // ---- detail
+  function renderRanges() {
+    const box = $("ranges"); box.replaceChildren();
+    for (const [k, label] of [["90", "3M"], ["180", "6M"], ["all", "All"]]) {
+      const b = h("button", null, label); b.type = "button"; b.setAttribute("aria-pressed", String(state.range === k));
+      b.addEventListener("click", () => { state.range = k; renderRanges(); renderChart(); }); box.appendChild(b);
+    }
+  }
+  function stat(k, v, s, cls) {
+    const d = h("div", "stat"); d.append(h("div", "k", k), h("div", "v " + (cls || ""), v)); if (s) d.appendChild(h("div", "s", s)); return d;
+  }
+  function renderDetail() {
+    const p = D.products.find((x) => x.id === state.sel);
+    const dn = $("dName"), dm = $("dMeta"), ds = $("dStats");
+    ds.replaceChildren(); dm.replaceChildren();
+    if (!p) { dn.textContent = "Select a product"; $("chart").replaceChildren(); return; }
+    dn.textContent = p.name;
+    dm.append(document.createTextNode(`${p.set} · ${TYPE[p.type] || p.type} · TCGplayer #${p.id}` + (p.dsr != null ? (p.dsr < 0 ? ` · releases in ${-p.dsr} days` : ` · ${p.dsr} days since release`) : "")));
+    if (p.url) { dm.appendChild(document.createTextNode(" · ")); const a = h("a", null, "View on TCGplayer ↗"); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; dm.appendChild(a); }
+    ds.append(
+      stat("Market price", usd(p.price)),
+      stat("30 days", pct(p.r30), null, dirClass(p.r30)),
+      stat("90 days", pct(p.r90), null, dirClass(p.r90)),
+      stat("From peak", pct(p.dd), p.dsp != null ? `peak ${p.dsp} days ago` : "no peak yet", p.dd != null && p.dd <= -0.005 ? "down" : ""),
+      stat("Trend", p.trend == null ? "—" : pct(p.trend) + " / 30d", p.r2 == null ? "needs 60+ days" : `fit R² ${p.r2.toFixed(2)}`, dirClass(p.trend)),
+      stat("vs loose packs", pct(p.pack), p.packs ? `${p.packs} packs` : "pack count unknown", p.pack == null ? "nil" : ""),
+      stat("vs MSRP", pct(p.msrp), p.msrp == null ? "MSRP not recorded" : null, p.msrp == null ? "nil" : ""),
+      stat("Flags", p.flags.length ? String(p.flags.length) : "None", p.flags.map((f) => FLAG[f] ? FLAG[f].label : f).join(", ") || null),
+    );
+    if (p.ebay) {  // private builds only: eBay units and listings from Terapeak, next to the TCGplayer price
+      const e = p.ebay, num = (v) => v == null ? "—" : v.toLocaleString("en-US"), nil = (v) => v == null ? "nil" : "";
+      const head = h("div", "pmeta", "eBay (Terapeak), to " + (e.newest ? fmtDate((Date.parse(e.newest + "T00:00:00Z") - EPOCH) / DAY) : "—"));
+      head.style.gridColumn = "1 / -1";
+      ds.append(
+        head,
+        stat("Units 7d", num(e.u7), null, nil(e.u7)),
+        stat("Units 28d", num(e.u28), null, nil(e.u28)),
+        stat("Avg sold 7d", usd(e.avg7), e.gap == null ? "vs TCGplayer —" : pct(e.gap) + " vs TCGplayer", dirClass(e.gap)),
+        stat("Active listings", e.listings == null ? "—" : e.capped ? "1,000+" : num(e.listings), e.capped ? "Terapeak shows at most 1,000" : null, nil(e.listings)),
+        stat("Days of supply", e.dos == null ? "—" : (e.capped ? "≥ " : "") + e.dos + " days", e.capped ? "lower bound" : null, nil(e.dos)),
+      );
+    }
+    const pts = D.series[String(p.id)] || [];
+    const t = $("dTable"); t.replaceChildren();
+    for (const [d, v] of pts.slice(-30).reverse()) { const tr = h("tr"); tr.append(h("td", null, fmtDate(d)), h("td", null, usd(v))); t.appendChild(tr); }
+    renderChart();
+  }
+
+  function niceStep(span, n) {
+    const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+    return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+  }
+  let chartState = null;
+  function renderChart() {
+    const svg = $("chart"), tip = $("tip"); svg.replaceChildren(); tip.hidden = true;
+    const p = D.products.find((x) => x.id === state.sel); if (!p) return;
+    let pts = D.series[String(p.id)] || [];
+    if (state.range !== "all") pts = pts.filter((q) => q[0] > ASOF - Number(state.range));
+    const W = Math.max(300, $("chartbox").clientWidth - 16), H = 260, m = { l: 52, r: 64, t: 22, b: 28 };
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    if (pts.length < 2) { const tx = el("text", { x: W / 2, y: H / 2, "text-anchor": "middle", fill: css("--muted"), "font-size": 13 }, svg); tx.textContent = "Not enough history yet"; chartState = null; return; }
+    const x0 = pts[0][0], x1 = Math.max(pts[pts.length - 1][0], x0 + 1);
+    let lo = Math.min(...pts.map((q) => q[1])), hi = Math.max(...pts.map((q) => q[1]));
+    const pad = (hi - lo) * 0.08 || hi * 0.05 || 1; lo = Math.max(0, lo - pad); hi = hi + pad;
+    const step = niceStep(hi - lo, 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    const X = (d) => m.l + (d - x0) / (x1 - x0) * (W - m.l - m.r), Y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+    const ink2 = css("--ink-2"), muted = css("--muted"), grid = css("--grid"), axis = css("--axis"), acc = css("--accent"), surf = css("--surface");
+    for (let v = lo; v <= hi + 1e-9; v += step) {
+      el("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: v === lo ? axis : grid, "stroke-width": 1 }, svg);
+      const t = el("text", { x: m.l - 8, y: Y(v) + 4, "text-anchor": "end", fill: muted, "font-size": 11, "font-variant-numeric": "tabular-nums" }, svg);
+      t.textContent = "$" + (step < 1 ? v.toFixed(2) : Math.round(v).toLocaleString("en-US"));
+    }
+    // month ticks
+    const first = dateOf(x0); let cur = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1));
+    const months = []; while ((cur - EPOCH) / DAY <= x1) { months.push(Math.round((cur - EPOCH) / DAY)); cur = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1)); }
+    const every = Math.ceil(months.length / Math.max(2, Math.floor((W - m.l - m.r) / 70)));
+    months.forEach((d, i) => { if (i % every) return; const dt = dateOf(d);
+      const t = el("text", { x: X(d), y: H - 8, "text-anchor": "middle", fill: muted, "font-size": 11 }, svg);
+      t.textContent = dt.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + (dt.getUTCMonth() === 0 ? " " + dt.getUTCFullYear() : ""); });
+    const line = pts.map((q, i) => `${i ? "L" : "M"}${X(q[0]).toFixed(1)},${Y(q[1]).toFixed(1)}`).join("");
+    el("path", { d: `${line}L${X(pts[pts.length - 1][0]).toFixed(1)},${Y(lo)}L${X(pts[0][0]).toFixed(1)},${Y(lo)}Z`, fill: css("--accent-wash"), stroke: "none" }, svg);
+    el("path", { d: line, fill: "none", stroke: acc, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    // peak marker (smoothed post-release peak from the metrics layer)
+    if (p.dsp != null) {
+      const target = ASOF - p.dsp; let best = null;
+      for (const q of pts) if (!best || Math.abs(q[0] - target) < Math.abs(best[0] - target)) best = q;
+      if (best && Math.abs(best[0] - target) <= 7) {
+        el("line", { x1: X(best[0]), x2: X(best[0]), y1: Y(best[1]) - 4, y2: m.t - 6, stroke: axis, "stroke-width": 1 }, svg);
+        const t = el("text", { x: X(best[0]), y: m.t - 9, "text-anchor": "middle", fill: ink2, "font-size": 11 }, svg);
+        t.textContent = "Peak " + fmtDate(best[0]).replace(/, \d{4}$/, "");
+      }
+    }
+    const last = pts[pts.length - 1];
+    el("circle", { cx: X(last[0]), cy: Y(last[1]), r: 4, fill: acc, stroke: surf, "stroke-width": 2 }, svg);
+    const lt = el("text", { x: X(last[0]) + 8, y: Y(last[1]) + 4, fill: css("--ink"), "font-size": 12, "font-weight": 600 }, svg);
+    lt.textContent = usd(last[1]);
+    // crosshair layer
+    const cross = el("line", { y1: m.t, y2: H - m.b, stroke: ink2, "stroke-width": 1, visibility: "hidden" }, svg);
+    const dot = el("circle", { r: 4, fill: acc, stroke: surf, "stroke-width": 2, visibility: "hidden" }, svg);
+    el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+    chartState = { pts, X, Y, W, cross, dot, idx: pts.length - 1 };
+  }
+  function showAt(i) {
+    const c = chartState; if (!c) return;
+    i = Math.max(0, Math.min(c.pts.length - 1, i)); c.idx = i;
+    const [d, v] = c.pts[i], x = c.X(d), y = c.Y(v), svg = $("chart"), tip = $("tip");
+    c.cross.setAttribute("x1", x); c.cross.setAttribute("x2", x); c.cross.setAttribute("visibility", "visible");
+    c.dot.setAttribute("cx", x); c.dot.setAttribute("cy", y); c.dot.setAttribute("visibility", "visible");
+    tip.replaceChildren(h("b", null, usd(v)), h("span", null, fmtDate(d)));
+    tip.hidden = false;
+    const scale = svg.clientWidth / c.W, px = x * scale + 8, tw = tip.offsetWidth;
+    tip.style.left = (px + tw + 12 > svg.clientWidth ? px - tw - 16 : px + 12) + "px";
+    tip.style.top = Math.max(0, y * scale - 20) + "px";
+  }
+  function hideTip() { const c = chartState; if (!c) return; $("tip").hidden = true; c.cross.setAttribute("visibility", "hidden"); c.dot.setAttribute("visibility", "hidden"); }
+  $("chart").addEventListener("pointermove", (e) => {
+    const c = chartState; if (!c) return;
+    const r = $("chart").getBoundingClientRect(), xv = (e.clientX - r.left) / r.width * c.W;
+    let best = 0; for (let i = 0; i < c.pts.length; i++) if (Math.abs(c.X(c.pts[i][0]) - xv) < Math.abs(c.X(c.pts[best][0]) - xv)) best = i;
+    showAt(best);
+  });
+  $("chart").addEventListener("pointerleave", hideTip);
+  $("chart").addEventListener("focus", () => chartState && showAt(chartState.idx));
+  $("chart").addEventListener("blur", hideTip);
+  $("chart").addEventListener("keydown", (e) => {
+    if (!chartState) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); showAt(chartState.idx - 1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); showAt(chartState.idx + 1); }
+  });
+
+  // ---- sets: diverging bars of median 90-day return
+  function renderSets() {
+    const svg = $("setsChart"); svg.replaceChildren();
+    const rows = D.sets;
+    const W = Math.max(320, svg.parentElement.clientWidth - 16), rowH = 30, labelW = Math.min(210, W * 0.36), valW = 60;
+    const H = rows.length * rowH + 26;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", "100%");
+    const vals = rows.map((r) => r.med90).filter((v) => v != null);
+    const ext = Math.max(0.05, ...vals.map(Math.abs));
+    const x0 = labelW + valW, x1 = W - valW, zero = (x0 + x1) / 2, S = (v) => zero + v / ext * (x1 - x0) / 2;
+    const ink = css("--ink"), muted = css("--muted"), axis = css("--axis");
+    el("line", { x1: zero, x2: zero, y1: 4, y2: H - 18, stroke: axis, "stroke-width": 1 }, svg);
+    const zt = el("text", { x: zero, y: H - 4, "text-anchor": "middle", fill: muted, "font-size": 11 }, svg); zt.textContent = "0%";
+    rows.forEach((r, i) => {
+      const cy = 8 + i * rowH + rowH / 2 - 4;
+      const nm = el("text", { x: 8, y: cy + 4, fill: ink, "font-size": 12.5 }, svg);
+      nm.textContent = r.name.replace(/^(ME|SV|SWSH)\d*[:.]?\s*/, "");
+      const sub = el("title", {}, nm); sub.textContent = `${r.name} · ${r.n} products`;
+      if (r.med90 == null) {
+        const t = el("text", { x: zero + 8, y: cy + 4, fill: muted, "font-size": 11.5 }, svg); t.textContent = "Too new for a 90-day return"; return;
+      }
+      const v = r.med90, bx = S(v), w = Math.abs(bx - zero), th = 14, rad = Math.min(4, w);
+      const up = v >= 0, color = up ? css("--accent") : css("--down");
+      const y = cy - th / 2;
+      const d = up
+        ? `M${zero},${y}H${bx - rad}Q${bx},${y} ${bx},${y + rad}V${y + th - rad}Q${bx},${y + th} ${bx - rad},${y + th}H${zero}Z`
+        : `M${zero},${y}H${bx + rad}Q${bx},${y} ${bx},${y + rad}V${y + th - rad}Q${bx},${y + th} ${bx + rad},${y + th}H${zero}Z`;
+      const bar = el("path", { d: w < 0.5 ? `M${zero},${y}h1v${th}h-1Z` : d, fill: color }, svg);
+      const tt = el("title", {}, bar); tt.textContent = `${r.name}: median 90-day ${pct(v)}, ${Math.round((r.cons || 0) * 100)}% of ${r.n} products up`;
+      const lab = el("text", { x: up ? bx + 6 : bx - 6, y: cy + 4, "text-anchor": up ? "start" : "end", fill: ink, "font-size": 12, "font-weight": 600, "font-variant-numeric": "tabular-nums" }, svg);
+      lab.textContent = pct(v);
+    });
+    $("setsNote").textContent = "Blue bars rose, red bars fell. Hover a bar for the share of the set's products that are up over 90 days.";
+  }
+
+  function renderAll(resetSets = true) {
+    renderTiers(); if (resetSets) renderSetSelect(); renderKpis(); renderList(); renderDetail();
+  }
+  renderRanges(); renderAll(); renderSets();
+  let rt; const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { renderChart(); renderSets(); }, 120); });
+  ro.observe($("chartbox"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderList(); renderChart(); renderSets(); });
+  new MutationObserver(() => { renderList(); renderChart(); renderSets(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

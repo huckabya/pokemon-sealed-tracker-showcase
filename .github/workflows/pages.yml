@@ -1,0 +1,38 @@
+name: Deploy dashboard
+
+# Runs in the PUBLIC showcase repo. Fetches the public build that the private
+# engine wrote to the public R2 bucket and deploys it to GitHub Pages.
+# The page is never committed, so this repo's history stays small (D-21).
+on:
+  schedule:
+    - cron: "17 23 * * *"  # after the engine's 21:47 UTC run
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Fetch the latest public build
+        run: |
+          mkdir -p _site
+          curl -fsSL "${{ vars.SITE_SOURCE_URL }}" -o _site/index.html
+          grep -q "Sealed Pulse" _site/index.html
+          grep -q '"public":true' _site/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
