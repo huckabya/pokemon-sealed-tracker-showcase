@@ -8,7 +8,7 @@
   gold/watchlist.parquet                      ranked focus products (feeds the Terapeak side repo)
   gold/price_series/group_id=<id>/*.parquet   daily headline price series, one folder per set
 
---public drops seed history and Terapeak-derived tables (D-25) so the output is safe to publish.
+--public drops Terapeak-derived tables (D-25) so the output is safe to publish; credited seed history stays (D-39).
 --upload copies the folder into the data store under that prefix (e.g. R2 gold/).
 Gold is derived and never committed to git (D-11).
 """
@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--data", default=os.environ.get("DATA_URI", "data"))
     ap.add_argument("--out", type=Path, default=Path("gold"))
     ap.add_argument("--as-of", type=dt.date.fromisoformat, default=None)
-    ap.add_argument("--public", action="store_true", help="exclude seed history and Terapeak-derived tables (D-25)")
+    ap.add_argument("--public", action="store_true", help="exclude Terapeak-derived tables (D-25)")
     ap.add_argument("--upload", default=None, help="prefix inside the data store to copy gold/ to")
     args = ap.parse_args(argv)
     print(json.dumps(build(args.data, args.out, args.as_of, args.public, args.upload)))

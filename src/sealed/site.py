@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--data", default=os.environ.get("DATA_URI", "data"))
     ap.add_argument("--out", type=Path, default=Path("site/index.html"))
     ap.add_argument("--as-of", type=dt.date.fromisoformat, default=None)
-    ap.add_argument("--public", action="store_true", help="exclude seed history and Terapeak-derived tables (D-25)")
+    ap.add_argument("--public", action="store_true", help="exclude Terapeak-derived tables (D-25)")
     ap.add_argument("--fragment", action="store_true", help="body-only HTML (for a Claude artifact)")
     ap.add_argument("--upload-uri", default=None, help="data store to copy the page to as site/index.html")
     args = ap.parse_args(argv)

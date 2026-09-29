@@ -285,9 +285,13 @@ footer.foot p { margin: 0 0 6px; max-width: 70ch; }
   $("asof").textContent = "Prices as of " + fmtDate(ASOF);
   $("mode").textContent = D.meta.public ? "Public build" : "Private proof of concept";
   const seeded = D.meta.sources.some((s) => s.startsWith("seed"));
-  $("prov").textContent = seeded
-    ? "History before daily collection comes from the open-source etfhanstorz/pokemon-tracker project (weekly points to Aug 10, 2026, then daily). It is included here for a private proof of concept only and is excluded from any public build."
-    : "Every price shown was collected by this project's own daily pipeline.";
+  if (seeded) {  // credited seed history (D-07, D-39)
+    const a = h("a", null, "etfhanstorz/pokemon-tracker"); a.href = "https://github.com/etfhanstorz/pokemon-tracker"; a.target = "_blank"; a.rel = "noopener";
+    $("prov").replaceChildren("History before this project's daily collection began comes from the open-source ", a,
+      " project (weekly points to Aug 10, 2026, then daily), used with credit. Those prices are on a slightly different basis and are marked as seed data; they will be removed at the author's request or once a better source exists.");
+  } else {
+    $("prov").textContent = "Every price shown was collected by this project's own daily pipeline.";
+  }
   $("build").textContent = "Built by sealed-tracker " + D.meta.release + (D.meta.commit ? " (" + D.meta.commit.slice(0, 7) + ")" : "") + ".";
 
   function renderTiers() {

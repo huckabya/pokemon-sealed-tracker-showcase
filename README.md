@@ -58,5 +58,8 @@ repository, so this copy is for reading rather than running.
 
 ## Data and attribution
 
-Prices are TCGplayer market prices, mirrored by TCGCSV. Charts show only data
-this project collected itself. Nothing here is financial advice.
+Prices are TCGplayer market prices, mirrored by TCGCSV. History from before
+this project's own daily collection began comes from the open-source
+[etfhanstorz/pokemon-tracker](https://github.com/etfhanstorz/pokemon-tracker)
+project, used with credit and marked as seed data on the page; it will be
+removed at the author's request. Nothing here is financial advice.
