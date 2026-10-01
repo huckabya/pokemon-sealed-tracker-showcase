@@ -4,7 +4,7 @@ A daily price tracker for English sealed Pokémon TCG product (booster boxes,
 Elite Trainer Boxes, booster bundles, packs and collections), built as an
 AI-assisted engineering project with Claude.
 
-**Live dashboard:** [the GitHub Pages link in this repository's About panel](https://huckabya.github.io/pokemon-sealed-tracker-showcase/).
+**Live dashboard:** the GitHub Pages link in this repository's About panel.
 It updates every day after TCGplayer's prices refresh.
 
 ## What it does
