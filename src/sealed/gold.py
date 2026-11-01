@@ -3,7 +3,7 @@
   python -m sealed.gold --data r2://sealed-data --out gold [--upload gold] [--public]
 
   gold/manifest.json                          as_of, generated_at, row counts, schema version, public flag
-  gold/product_latest.parquet                 one row per sealed product: dims + metrics + relevance
+  gold/product_latest.parquet                 one row per sealed product: dims (incl. language and kind) + metrics + relevance
   gold/set_latest.parquet                     one row per set
   gold/watchlist.parquet                      ranked focus products (feeds the Terapeak side repo)
   gold/price_series/group_id=<id>/*.parquet   daily headline price series, one folder per set
@@ -26,7 +26,11 @@ from sealed import build_stamp
 from sealed.metrics import connect
 from sealed.store import open_store
 
-GOLD_SCHEMA_VERSION = 2
+GOLD_SCHEMA_VERSION = 4
+
+# Second-opinion flag (D-49): eBay 7-day average sold vs TCGplayer market, private builds only.
+DISAGREE_GAP = 0.20
+DISAGREE_MIN_UNITS = 10
 
 # Terapeak/attention priority by format: most-traded, most-quoted first.
 _TYPE_PRIORITY = "CASE product_type WHEN 'etb' THEN 1 WHEN 'booster_bundle' THEN 2 WHEN 'booster_box' THEN 3 " \
@@ -51,6 +55,7 @@ def build(data_root, out: Path, as_of: dt.date | None = None, public: bool = Fal
         SELECT dp.product_id, dp.group_id, g.name AS set_name, g.abbreviation AS set_code,
                dp.name, dp.url, dp.image_url, dp.product_type, dp.unit_kind, dp.unit_count,
                dp.retailer_exclusive, dp.pack_count, dp.msrp_usd,
+               coalesce(dp.language, 'en') AS language, coalesce(dp.kind, 'sealed') AS kind,
                r.tier, coalesce(r.is_focus, false) AS is_focus, coalesce(r.flags, []::VARCHAR[]) AS flags,
                m.* EXCLUDE (product_id, group_id, product_type),
                v.* EXCLUDE (product_id, asof_date),
@@ -58,7 +63,10 @@ def build(data_root, out: Path, as_of: dt.date | None = None, public: bool = Fal
                tp.* EXCLUDE (product_id, asof_date),
                -- eBay 7-day average sold price vs TCGplayer market price (D-34); private only
                CASE WHEN tp.avg_sold_price_7d_tp IS NOT NULL AND m.last_price > 0
-                    THEN tp.avg_sold_price_7d_tp / m.last_price - 1 END AS ebay_vs_tcgplayer_tp
+                    THEN tp.avg_sold_price_7d_tp / m.last_price - 1 END AS ebay_vs_tcgplayer_tp,
+               CASE WHEN tp.avg_sold_price_7d_tp IS NOT NULL AND m.last_price > 0 AND m.is_fresh
+                    THEN round(abs(tp.avg_sold_price_7d_tp / m.last_price - 1), 9) >= {DISAGREE_GAP}
+                         AND coalesce(tp.units_sold_7d_tp, 0) >= {DISAGREE_MIN_UNITS} END AS disagreement_tp
         FROM dim_product dp
         JOIN dim_group g USING (group_id)
         LEFT JOIN product_metrics({d}) m USING (product_id)
@@ -76,7 +84,9 @@ def build(data_root, out: Path, as_of: dt.date | None = None, public: bool = Fal
         SELECT row_number() OVER (
                  ORDER BY (days_since_release < 0), days_since_release, {_TYPE_PRIORITY}, product_id) AS priority,
                product_id, name, set_name, product_type, last_price, flags
-        FROM product_relevance({d}) WHERE is_focus
+        FROM product_relevance({d})
+        -- the Terapeak capture pool is English (its eBay queries exclude Japanese)
+        WHERE is_focus AND language = 'en'
       ) TO '{o}/watchlist.parquet' (FORMAT parquet, COMPRESSION zstd)""")
     con.execute(f"""
       COPY (

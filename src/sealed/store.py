@@ -18,11 +18,13 @@ Layout (paths relative to the root):
 
   dim_group.parquet                          one row per TCGplayer group (set)
   dim_product.parquet                        one row per sealed product
+  dim_item.parquet                           one row per registry series (private, D-48)
   fact_price_daily/YYYY/YYYY-MM-DD.parquet   immutable, one file per snapshot
   fact_price_seed/<source>.parquet           third-party backfill (private only)
   fact_sales_daily/YYYY/YYYY-MM-DD.parquet   written by the Terapeak side repo
   fact_listings_daily/YYYY/YYYY-MM-DD.parquet written by the Terapeak side repo
   _reports/excluded_products.csv             classifier audit trail
+  _reports/uncertain_products.csv            rules-classified products the rules are unsure of
 
 Daily files are write-once. Dims are small and rewritten each run.
 """
@@ -240,3 +242,13 @@ def write_excluded_report(root, rows: list[dict[str, Any]]) -> str:
     st = open_store(root)
     st.write_bytes("_reports/excluded_products.csv", buf.getvalue().encode("utf-8"))
     return st.path("_reports/excluded_products.csv")
+
+
+def write_uncertain_report(root, rows: list[dict[str, Any]]) -> str:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=["product_id", "group_id", "name", "reason"])
+    writer.writeheader()
+    writer.writerows(sorted(rows, key=lambda r: (r["reason"], r["product_id"])))
+    st = open_store(root)
+    st.write_bytes("_reports/uncertain_products.csv", buf.getvalue().encode("utf-8"))
+    return st.path("_reports/uncertain_products.csv")

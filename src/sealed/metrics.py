@@ -29,13 +29,15 @@ _DIRS = {
 _SINGLE = {
     "dim_group": ("dim_group.parquet", schemas.DIM_GROUP),
     "dim_product": ("dim_product.parquet", schemas.DIM_PRODUCT),
+    "dim_item": ("dim_item.parquet", schemas.DIM_ITEM),
 }
 
 
 # Tables that must never reach a public build (D-25): Terapeak-derived
 # sales/listings (eBay data for personal research only). Seed history is
-# published with credit (D-39), so it is not listed here.
-PRIVATE_TABLES = ("fact_sales_daily", "fact_listings_daily")
+# published with credit (D-39), so it is not listed here. Registry ids and
+# names are private too (D-25 amended, D-48).
+PRIVATE_TABLES = ("fact_sales_daily", "fact_listings_daily", "dim_item")
 
 
 def load_tables(root: str | Path | Store, public: bool = False) -> dict[str, pa.Table]:
@@ -45,7 +47,8 @@ def load_tables(root: str | Path | Store, public: bool = False) -> dict[str, pa.
         rels = [] if (public and name in PRIVATE_TABLES) else st.list_files(name)
         tables[name] = st.read_many(rels, schema)
     for name, (rel, schema) in _SINGLE.items():
-        tables[name] = st.read_parquet(rel, schema) if st.exists(rel) else schema.empty_table()
+        withheld = public and name in PRIVATE_TABLES
+        tables[name] = schema.empty_table() if withheld or not st.exists(rel) else st.read_parquet(rel, schema)
     return tables
 
 
@@ -53,6 +56,9 @@ def connect(root: str | Path | Store, public: bool = False) -> duckdb.DuckDBPyCo
     """public=True leaves out Terapeak-derived tables (required for anything published, D-25);
     the credited seed history stays (D-39)."""
     con = duckdb.connect(":memory:")
+    # F55: DuckDB 1.5.5 window functions raise an InternalException in WindowLocalSourceState::Finalize
+    # at the default thread count (~5% of product_metrics queries); one thread avoids it.
+    con.execute("SET threads = 1")
     for name, table in load_tables(root, public).items():
         con.register(f"_arrow_{name}", table)
         con.execute(f"CREATE OR REPLACE TABLE {name} AS SELECT * FROM _arrow_{name}")

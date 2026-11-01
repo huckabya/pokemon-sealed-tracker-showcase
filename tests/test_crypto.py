@@ -136,3 +136,47 @@ def test_gold_upload_is_encrypted(tmp_path, monkeypatch):
     assert st.upload_dir(local, "gold") == 2
     assert crypto.audit(st) == {"encrypted": ["gold/price_series/group_id=24541/data_0.parquet"], "plaintext": []}
     assert (tmp_path / "data" / "gold" / "manifest.json").read_text() == "{}"
+
+
+# ---- C8: files written before the currency/language/kind columns read as nulls ------
+
+_C8_COLUMNS = {"currency", "language", "kind"}
+
+
+def test_pre_c8_and_c8_files_read_together(tmp_path, monkeypatch):
+    monkeypatch.setenv("SEALED_DATA_KEY", KEY)
+    usd = prices()
+    usd = usd.set_column(usd.schema.get_field_index("currency"), "currency", pa.array(["USD", "USD"], pa.string()))
+    rel1 = store.daily_rel("fact_price_daily", DAY)
+    rel2 = store.daily_rel("fact_price_daily", DAY + dt.timedelta(days=1))
+    store.write_daily(tmp_path, "fact_price_daily", DAY, prices().drop_columns(["currency"]))
+    store.write_daily(tmp_path, "fact_price_daily", DAY + dt.timedelta(days=1), usd)
+    back = store.open_store(tmp_path).read_many([rel1, rel2], schemas.FACT_PRICE_DAILY)
+    assert back.schema == schemas.FACT_PRICE_DAILY
+    assert back.column("currency").to_pylist() == [None, None, "USD", "USD"]
+
+
+def test_every_c8_table_reads_pre_c8_files_as_null(tmp_path, monkeypatch):
+    tables = {"fact_price_daily": schemas.FACT_PRICE_DAILY, "fact_price_seed": schemas.FACT_PRICE_SEED,
+              "fact_sales_daily": schemas.FACT_SALES_DAILY, "fact_listings_daily": schemas.FACT_LISTINGS_DAILY,
+              "dim_product": schemas.DIM_PRODUCT}
+
+    def pre_c8(schema):
+        old = pa.schema([f for f in schema if f.name not in _C8_COLUMNS])
+        return pa.Table.from_pylist([{}], schema=old)
+
+    st = store.open_store(tmp_path)
+    for name, schema in tables.items():
+        st.write_parquet(f"plain/{name}.parquet", pre_c8(schema))  # no key: plaintext (local only)
+    monkeypatch.setenv("SEALED_DATA_KEY", KEY)
+    st = store.open_store(tmp_path)
+    for name, schema in tables.items():
+        st.write_parquet(f"enc/{name}.parquet", pre_c8(schema))
+
+    for kind in ("plain", "enc"):
+        for name, schema in tables.items():
+            back = st.read_parquet(f"{kind}/{name}.parquet", schema)
+            c8 = sorted(_C8_COLUMNS & set(schema.names))
+            assert back.schema == schema, f"{kind}/{name}"
+            assert c8, name
+            assert all(back.column(c).null_count == 1 for c in c8), f"{kind}/{name}"

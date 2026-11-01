@@ -4,6 +4,9 @@ import pyarrow as pa
 
 TS = pa.timestamp("us", tz="UTC")
 
+# C8 columns (currency, language, kind) are null in files written before them;
+# a null means 'USD', 'en' or 'sealed' (D-47).
+
 DIM_GROUP = pa.schema([
     ("group_id", pa.int32()),
     ("category_id", pa.int16()),
@@ -33,6 +36,8 @@ DIM_PRODUCT = pa.schema([
     ("classifier_version", pa.int16()),
     ("first_seen", pa.date32()),
     ("last_seen", pa.date32()),
+    ("language", pa.string()),
+    ("kind", pa.string()),
 ])
 
 # One row per (snapshot_date, product_id, sub_type_name). All five TCGplayer
@@ -48,6 +53,7 @@ FACT_PRICE_DAILY = pa.schema([
     ("direct_low_price", pa.float64()),
     ("source", pa.string()),  # tcgcsv_live | tcgcsv_archive
     ("ingested_at", TS),
+    ("currency", pa.string()),
 ])
 
 # Third-party history used only to fill dates before our own collection began.
@@ -59,6 +65,7 @@ FACT_PRICE_SEED = pa.schema([
     ("price_basis", pa.string()),
     ("source", pa.string()),
     ("source_ref", pa.string()),
+    ("currency", pa.string()),
 ])
 
 # Designed now, collected later (decision D-03). Mirrors Pokefin's
@@ -74,6 +81,8 @@ FACT_SALES_DAILY = pa.schema([
     ("market_price", pa.float64()),
     ("source", pa.string()),
     ("ingested_at", TS),
+    ("currency", pa.string()),
+    ("condition", pa.string()),  # New | Used | Ungraded; null = New (D-48)
 ])
 
 FACT_LISTINGS_DAILY = pa.schema([
@@ -84,4 +93,20 @@ FACT_LISTINGS_DAILY = pa.schema([
     ("lowest_listing_price", pa.float64()),
     ("source", pa.string()),
     ("ingested_at", TS),
+    ("currency", pa.string()),
+    ("condition", pa.string()),  # New | Used | Ungraded; null = New (D-48)
+])
+
+# One row per non-New price series (D-48, roadmap R-03). grader/grade stay blank until graded series exist.
+DIM_ITEM = pa.schema([
+    ("item_id", pa.int32()),
+    ("product_id", pa.int32()),
+    ("name", pa.string()),
+    ("set_name", pa.string()),
+    ("condition", pa.string()),
+    ("condition_detail", pa.string()),
+    ("series_kind", pa.string()),
+    ("grader", pa.string()),
+    ("grade", pa.string()),
+    ("released_on", pa.date32()),
 ])

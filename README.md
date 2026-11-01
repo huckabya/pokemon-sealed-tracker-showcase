@@ -1,7 +1,8 @@
 # Sealed Pulse
 
-A daily price tracker for English sealed Pokémon TCG product (booster boxes,
-Elite Trainer Boxes, booster bundles, packs and collections), built as an
+A daily price tracker for English and Japanese sealed Pokémon TCG product, shown
+one language at a time (booster boxes, Elite Trainer Boxes, booster bundles,
+packs and collections), built as an
 AI-assisted engineering project with Claude.
 
 **Live dashboard:** the GitHub Pages link in this repository's About panel.
@@ -51,8 +52,7 @@ making the product and data-source decisions. The process:
 ## What is in this repository
 
 This is a showcase copy of the plumbing and presentation code: the TCGCSV
-client, storage layer, quality gate, snapshot builder, collector, dashboard
-renderer and their tests. The metric definitions, product classifier,
+client, storage layer, quality gate, dashboard renderer and their tests. The metric definitions, product classifier,
 curated product data and the underlying price history are kept in a private
 repository, so this copy is for reading rather than running.
 

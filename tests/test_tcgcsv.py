@@ -67,3 +67,14 @@ def test_gives_up_after_retries():
 def test_success_false_raises():
     with pytest.raises(TcgcsvError):
         client([FakeResponse(200, {"success": False, "errors": ["x"], "results": []})]).groups()
+
+
+def test_category_is_in_every_url():
+    ok = FakeResponse(200, {"success": True, "results": []})
+    c = client([ok, ok, ok])
+    c.groups(85)
+    c.products(7, 85)
+    c.prices(7, 85)
+    assert c.session.urls == ["https://tcgcsv.com/tcgplayer/85/groups",
+                              "https://tcgcsv.com/tcgplayer/85/7/products",
+                              "https://tcgcsv.com/tcgplayer/85/7/prices"]

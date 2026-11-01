@@ -11,7 +11,7 @@ from moto.server import ThreadedMotoServer
 
 from sealed import collect, crypto, gold, quality, store
 from sealed.metrics import connect
-from tests.test_collect import FakeClient
+from tests.test_collect import FakeClient, _tiny_feed
 from tests.test_crypto import DAY, KEY, prices
 
 
@@ -33,7 +33,7 @@ def bucket(monkeypatch):
 
 
 def test_collect_query_and_upload_on_bucket(bucket, monkeypatch, now, tmp_path):
-    monkeypatch.setattr(quality, "MIN_ROWS", 1)
+    _tiny_feed(monkeypatch)
     monkeypatch.setenv("SEALED_DATA_KEY", KEY)
     assert collect.run(bucket, FakeClient(), tmp_path / "none.csv", now, lambda m: None) == 0
     st = store.open_store(bucket)
@@ -44,7 +44,7 @@ def test_collect_query_and_upload_on_bucket(bucket, monkeypatch, now, tmp_path):
     assert collect.run(bucket, client, tmp_path / "none.csv", now, lambda m: None) == 0 and client.calls == 0
 
     con = connect(bucket)
-    assert con.sql("SELECT count(*) FROM v_price_series").fetchone()[0] == 3
+    assert con.sql("SELECT count(*) FROM v_price_series").fetchone()[0] == 5
 
     manifest = gold.build(bucket, tmp_path / "gold", upload_prefix="gold")
     assert manifest["uploaded_files"] >= 5
@@ -55,7 +55,7 @@ def test_collect_query_and_upload_on_bucket(bucket, monkeypatch, now, tmp_path):
 
 
 def test_bucket_refuses_plaintext_without_a_key(bucket, monkeypatch, now, tmp_path):
-    monkeypatch.setattr(quality, "MIN_ROWS", 1)
+    _tiny_feed(monkeypatch)
     with pytest.raises(crypto.MissingKey, match="refusing to write plaintext"):
         collect.run(bucket, FakeClient(), tmp_path / "none.csv", now, lambda m: None)
     assert not store.open_store(bucket).exists("fact_price_daily/2026/2026-09-26.parquet")
