@@ -55,7 +55,12 @@ class TcgcsvClient:
         resp = self._get(path)
         if resp.status_code == 404:
             return []
-        body = resp.json()
+        try:
+            body = resp.json()
+        except ValueError:
+            raise TcgcsvError(f"bad JSON from {path}: {resp.text[:80]}") from None
+        if not isinstance(body, dict):
+            raise TcgcsvError(f"unexpected body from {path}: {type(body).__name__}")
         if body.get("success") is False:
             raise TcgcsvError(f"success=false for {path}: {body.get('errors')}")
         return list(body.get("results") or [])

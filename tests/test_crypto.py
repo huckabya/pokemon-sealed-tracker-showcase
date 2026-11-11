@@ -44,6 +44,8 @@ def test_new_data_key_is_256_bits_and_bad_keys_are_rejected():
 
 
 def test_status_never_prints_values(monkeypatch, capsys):
+    for v in ("SEALED_NO_KEYCHAIN", "CLAUDECODE", "PYTHON_KEYRING_BACKEND"):
+        monkeypatch.delenv(v, raising=False)
     monkeypatch.setenv("SEALED_DATA_KEY", KEY)
     monkeypatch.setattr(keys, "_keychain_get", lambda name: "secret-id" if name == "R2_ACCESS_KEY_ID" else None)
     assert keys.main(["status"]) == 0

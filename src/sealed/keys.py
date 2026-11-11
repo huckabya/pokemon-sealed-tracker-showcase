@@ -11,6 +11,10 @@ instead of shell profiles or .env files:
   python -m sealed.keys status             # where each secret is found; never prints values
   python -m sealed.keys export SEALED_DATA_KEY | gh secret set SEALED_DATA_KEY -R you/sealed-tracker
 
+In an agent sandbox (CLAUDECODE set), with SEALED_NO_KEYCHAIN=1, or under the null
+keyring backend, the keychain is never read or written: secrets come from the
+environment or are missing, and `status` says "keychain disabled" (D-62).
+
 Both repos read the same keychain entries (service "sealed-tracker"), so you
 set them once per computer. Copied verbatim into the Terapeak repo (python -m
 terapeak.keys); keep the copies identical.
@@ -30,7 +34,24 @@ DATA_KEY = "SEALED_DATA_KEY"
 NAMES = ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", DATA_KEY)
 
 
+class KeychainDisabled(RuntimeError):
+    """The OS keychain is off limits to this process (D-62)."""
+
+
+def _keychain_disabled() -> str | None:
+    """Why this process must leave the OS keychain alone, or None (D-62)."""
+    if os.environ.get("SEALED_NO_KEYCHAIN"):
+        return "SEALED_NO_KEYCHAIN is set"
+    if os.environ.get("CLAUDECODE"):
+        return "CLAUDECODE is set, an agent sandbox"
+    if os.environ.get("PYTHON_KEYRING_BACKEND") == "keyring.backends.null.Keyring":
+        return "PYTHON_KEYRING_BACKEND is the null backend"
+    return None
+
+
 def _keychain_get(name: str) -> str | None:
+    if _keychain_disabled():
+        return None
     try:
         import keyring
         from keyring.errors import NoKeyringError
@@ -46,6 +67,9 @@ def _keychain_get(name: str) -> str | None:
 
 
 def _keychain_set(name: str, value: str) -> None:
+    why = _keychain_disabled()
+    if why:
+        raise KeychainDisabled(f"refusing to write {name} to the OS keychain: {why} (D-62)")
     import keyring  # raises ImportError with a clear message if the extra isn't installed
     keyring.set_password(SERVICE, name, value)
 
@@ -57,6 +81,8 @@ def get(name: str) -> str | None:
 def source(name: str) -> str:
     if os.environ.get(name):
         return "environment"
+    if why := _keychain_disabled():
+        return f"keychain disabled ({why})"
     return "keychain" if _keychain_get(name) else "missing"
 
 
@@ -102,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
               f"(python -m {__package__}.keys export {DATA_KEY}) and add it to GitHub (see README).")
         return 0
     if args.cmd == "set":
+        if why := _keychain_disabled():
+            raise KeychainDisabled(f"refusing to write {args.name} to the OS keychain: {why} (D-62)")
         value = getpass.getpass(f"{args.name}: ").strip()
         if args.name == DATA_KEY:
             validate_data_key(value)

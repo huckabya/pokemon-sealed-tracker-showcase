@@ -29,6 +29,7 @@ from sealed.store import open_store
 GOLD_SCHEMA_VERSION = 4
 
 # Second-opinion flag (D-49): eBay 7-day average sold vs TCGplayer market, private builds only.
+# Passed to product_disagreement in sql/views.sql.
 DISAGREE_GAP = 0.20
 DISAGREE_MIN_UNITS = 10
 
@@ -61,12 +62,8 @@ def build(data_root, out: Path, as_of: dt.date | None = None, public: bool = Fal
                v.* EXCLUDE (product_id, asof_date),
                pl.pulse_signal, pl.volume_source AS pulse_volume_source,
                tp.* EXCLUDE (product_id, asof_date),
-               -- eBay 7-day average sold price vs TCGplayer market price (D-34); private only
-               CASE WHEN tp.avg_sold_price_7d_tp IS NOT NULL AND m.last_price > 0
-                    THEN tp.avg_sold_price_7d_tp / m.last_price - 1 END AS ebay_vs_tcgplayer_tp,
-               CASE WHEN tp.avg_sold_price_7d_tp IS NOT NULL AND m.last_price > 0 AND m.is_fresh
-                    THEN round(abs(tp.avg_sold_price_7d_tp / m.last_price - 1), 9) >= {DISAGREE_GAP}
-                         AND coalesce(tp.units_sold_7d_tp, 0) >= {DISAGREE_MIN_UNITS} END AS disagreement_tp
+               -- eBay 7-day average sold vs TCGplayer market (D-34, D-49 / C3); private only
+               dg.ebay_vs_tcgplayer_tp, dg.disagreement_tp
         FROM dim_product dp
         JOIN dim_group g USING (group_id)
         LEFT JOIN product_metrics({d}) m USING (product_id)
@@ -74,6 +71,7 @@ def build(data_root, out: Path, as_of: dt.date | None = None, public: bool = Fal
         LEFT JOIN product_volume_metrics({d}) v USING (product_id)
         LEFT JOIN product_pulse({d}) pl USING (product_id)
         LEFT JOIN product_volume_terapeak({d}) tp USING (product_id)
+        LEFT JOIN product_disagreement({d}, {DISAGREE_GAP}, {DISAGREE_MIN_UNITS}) dg USING (product_id)
         ORDER BY dp.group_id, dp.product_id
       ) TO '{o}/product_latest.parquet' (FORMAT parquet, COMPRESSION zstd)""")
     con.execute(f"""

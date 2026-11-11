@@ -66,16 +66,14 @@ def payload(data_root, as_of: dt.date | None = None, public: bool = False,
              r.trend_90d_per_30d, r.trend_90d_r2, r.zscore_30d, r.pack_premium, r.msrp_premium,
              r.days_since_release, dp.url, dp.pack_count,
              coalesce(dp.language, 'en'), coalesce(dp.kind, 'sealed'), dp.classification_source,
-             m.low_price, m.high_price, m.mid_price, m.spread_pct, m.n_obs_30d, m.flag_thin_price, m.price_confidence,
-             m.peer_median_gap
+             m.low_price, m.high_price, m.mid_price, m.spread_pct, m.n_obs_30d, m.flag_thin_price, m.price_confidence
       FROM product_relevance({d}) r JOIN dim_product dp USING (product_id)
              JOIN product_metrics({d}) m USING (product_id)
     """).fetchall()
     products = []
-    peer_gap = None  # one value per as_of, identical on every row
     for row in rel:
         (pid, name, set_name, gid, ptype, tier, focus, flags, price, r30, r90, dd, dsp,
-         trend, r2, z, pack, msrp, dsr, url, packs, lang, kind, cls, lo, hi, mid, spread, nobs, thin, conf, peer_gap) = row
+         trend, r2, z, pack, msrp, dsr, url, packs, lang, kind, cls, lo, hi, mid, spread, nobs, thin, conf) = row
         products.append({
             "id": pid, "name": name, "set": set_name or "", "gid": gid, "type": ptype, "tier": tier,
             "focus": bool(focus), "flags": list(flags or []), "price": _r(price, 2), "r30": _r(r30),
@@ -112,7 +110,6 @@ def payload(data_root, as_of: dt.date | None = None, public: bool = False,
     return {
         "meta": {"as_of": as_of.isoformat(), "epoch": EPOCH.isoformat(), "public": public,
                  "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="minutes"),
-                 "peer_gap": _r(peer_gap, 9),
                  "sources": sorted(sources), "cur": _currency(con, as_of), **build_stamp()},
         "products": products, "series": series, "sets": sets,
         "events": _events(events_path, as_of, products),

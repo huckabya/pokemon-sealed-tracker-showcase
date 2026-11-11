@@ -17,6 +17,8 @@ class FakeResponse:
         return 200 <= self.status_code < 300
 
     def json(self):
+        if isinstance(self._json, Exception):
+            raise self._json
         return self._json
 
 
@@ -67,6 +69,28 @@ def test_gives_up_after_retries():
 def test_success_false_raises():
     with pytest.raises(TcgcsvError):
         client([FakeResponse(200, {"success": False, "errors": ["x"], "results": []})]).groups()
+
+
+# --- F70: a malformed 200 body is a TcgcsvError, not a stray exception -------
+HTML_BODY = "<html><body>502 Bad Gateway</body></html>"
+
+
+def _html_response():
+    err = requests.exceptions.JSONDecodeError("Expecting value", HTML_BODY, 0)
+    return FakeResponse(200, err, text=HTML_BODY)
+
+
+def test_a_non_json_200_body_raises_tcgcsv_error_naming_the_path():
+    with pytest.raises(TcgcsvError, match="bad JSON") as info:
+        client([_html_response()]).products(7, 85)
+    assert "/tcgplayer/85/7/products" in str(info.value)
+
+
+@pytest.mark.parametrize("body", [[], [1], "text"])
+def test_a_json_body_that_is_not_an_object_raises_tcgcsv_error(body):
+    with pytest.raises(TcgcsvError, match="unexpected body") as info:
+        client([FakeResponse(200, body)]).prices(7, 85)
+    assert "/tcgplayer/85/7/prices" in str(info.value)
 
 
 def test_category_is_in_every_url():
